@@ -1,18 +1,20 @@
 
-<!DOCTYPE html>
+            
+        <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Olympic 100m Sprint Simulator</title>
+    <title>Global Olympic Athletics Simulator</title>
     <style>
         :root {
             --primary: #0085C7;
             --gold: #D4AF37;
             --silver: #C0C0C0;
             --bronze: #CD7F32;
-            --dark: #1a1a1a;
-            --light: #f4f4f9;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --track: #c0392b;
         }
 
         body {
@@ -27,32 +29,23 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 950px;
             width: 100%;
             background: white;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
         }
 
-        h1, h2 {
-            text-align: center;
-            color: var(--dark);
-        }
-
-        .setup-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
+        h1, h2, h3 { text-align: center; color: var(--dark); }
+        .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 25px; }
 
         input, button {
             padding: 12px 20px;
             font-size: 16px;
             border-radius: 8px;
-            border: 2px solid #ddd;
+            border: 2px solid #bdc3c7;
+            margin: 5px;
         }
 
         button {
@@ -61,28 +54,28 @@
             border: none;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.1s;
         }
 
-        button:hover {
-            background-color: #006699;
-        }
+        button:hover { background-color: #006699; transform: translateY(-2px); }
+        button:disabled { background-color: #95a5a6; cursor: not-allowed; transform: none; }
 
-        .game-screen {
-            display: none;
-        }
+        .setup-screen { display: flex; flex-direction: column; align-items: center; }
+        .game-screen { display: none; }
 
         .status-bar {
             display: flex;
             justify-content: space-between;
-            background: #eee;
-            padding: 10px 20px;
+            background: #f8f9fa;
+            padding: 15px 25px;
             border-radius: 8px;
             font-weight: bold;
+            font-size: 1.1rem;
             margin-bottom: 20px;
+            border-left: 5px solid var(--primary);
         }
 
-        /* Tile Grid Mechanics */
+        /* 4 Tile Mechanics */
         .tile-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -102,80 +95,49 @@
             border-radius: 10px;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.1s, background-color 0.2s;
+            transition: transform 0.1s;
         }
 
-        .tile:hover {
-            transform: translateY(-3px);
-            background-color: #006699;
-        }
+        .tile:hover { transform: translateY(-4px); background-color: #0073a8; }
+        .tile.revealed { background-color: #27ae60; pointer-events: none; }
+        .tile.disabled { background-color: #bdc3c7; pointer-events: none; transform: none; }
 
-        .tile.revealed {
-            background-color: #28a745;
-            pointer-events: none;
-        }
-
-        .tile.disabled {
-            background-color: #ccc;
-            pointer-events: none;
-            transform: none;
-        }
-
-        /* Visual Track Feed */
+        /* Visualization Bars */
         .track-container {
-            background: #d63031;
+            background: var(--track);
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 25px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
         }
 
         .lane {
             display: flex;
             align-items: center;
-            border-bottom: 1px dashed rgba(255,255,255,0.4);
+            border-bottom: 1px dashed rgba(255,255,255,0.3);
             padding: 6px 0;
-            position: relative;
         }
-
         .lane:last-child { border-bottom: none; }
 
-        .lane-label {
-            width: 50px;
-            color: white;
-            font-weight: bold;
-            font-size: 12px;
-        }
-
+        .lane-label { width: 55px; color: white; font-weight: bold; font-size: 13px; }
+        
         .lane-bar-bg {
             flex-grow: 1;
-            background: rgba(0,0,0,0.2);
-            height: 14px;
-            border-radius: 7px;
-            position: relative;
+            background: rgba(0,0,0,0.25);
+            height: 16px;
+            border-radius: 8px;
             overflow: hidden;
         }
 
         .lane-progress {
             height: 100%;
-            background: #ffeaa7;
+            background: #f1c40f;
             width: 0%;
             transition: width 0.4s ease-out;
-            position: relative;
         }
+        .lane-progress.player-lane { background: #2ecc71; }
 
-        .lane-progress.player-lane {
-            background: #55efc4;
-        }
-
-        .runner-marker {
-            position: absolute;
-            right: 0;
-            top: -2px;
-            font-size: 14px;
-        }
-
-        /* Tables Data Grid */
+        /* Grids and Tables */
         .tables-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -190,29 +152,14 @@
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            font-size: 0.95rem;
         }
 
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ecf0f1; }
+        th { background-color: var(--dark); color: white; }
+        tr.highlight { background-color: #e8f4fd; font-weight: bold; }
 
-        th {
-            background-color: #2d3436;
-            color: white;
-        }
-
-        tr.highlight {
-            background-color: #e8f4fd;
-            font-weight: bold;
-        }
-
-        .badge {
-            font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
+        .badge { font-weight: bold; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; }
         .gold { background: var(--gold); color: black; }
         .silver { background: var(--silver); color: black; }
         .bronze { background: var(--bronze); color: white; }
@@ -221,24 +168,26 @@
 <body>
 
 <div class="container">
-    <h1>🏆 Global Olympic Simulator</h1>
+    <h1>🏅 Ultimate Olympic Athletics Simulator</h1>
+    <p class="subtitle">10 Events. 10 Phases per Event. Build your power to win Gold.</p>
     
-    <!-- Setup Dashboard Space -->
+    <!-- Setup Screen -->
     <div id="setupScreen" class="setup-screen">
-        <h2>Select Your Nation</h2>
-        <p>Pick a country abbreviation to step onto the blocks (e.g., AUS, FRA, BRA, IND).</p>
-        <input type="text" id="countryInput" placeholder="NATION CODE (e.g., AUS)" maxlength="3" style="text-transform: uppercase;">
-        <button onclick="startGame()">Initialize Olympic Cycle</button>
+        <h2>Enter Your National Delegation</h2>
+        <input type="text" id="countryInput" placeholder="e.g., USA, GBR, IND" maxlength="3" style="text-transform: uppercase;">
+        <button onclick="initializeGames()">Start Olympic Campaign</button>
     </div>
 
-    <!-- Active Match Field Canvas -->
+    <!-- Active Game Screen -->
     <div id="gameScreen" class="game-screen">
+        <h2 id="eventTitle">Event 1: 100m Sprint</h2>
+        
         <div class="status-bar">
-            <span id="roundDisplay">Second: 1 / 10</span>
-            <span id="playerDistanceDisplay">Distance: 0.00m / 100m</span>
+            <span id="roundDisplay">Phase: 1 / 10</span>
+            <span id="playerScoreDisplay">Accumulated Power: 0</span>
         </div>
 
-        <h3 id="actionPrompt" style="text-align: center;">Choose a hidden Burst Tile to gain speed!</h3>
+        <h3 id="actionPrompt">Select a hidden tile (7, 8, 9, or 10) to build momentum!</h3>
         
         <div class="tile-container" id="tileGrid">
             <div class="tile" onclick="selectTile(0)">?</div>
@@ -247,33 +196,24 @@
             <div class="tile" onclick="selectTile(3)">?</div>
         </div>
 
-        <!-- Simulated Visual Track Grid Matrix -->
         <div class="track-container" id="visualTrack"></div>
 
         <div style="text-align: center; margin-top: 15px;">
-            <button id="nextRaceBtn" style="display:none;" onclick="resetRace()">Run Next 100m Event</button>
+            <button id="nextEventBtn" style="display:none;" onclick="startNextEvent()">Proceed to Next Event</button>
         </div>
 
-        <!-- Time Tables and Standings Area Layout Grid -->
         <div class="tables-section">
             <div>
-                <h3>⏱️ 100m Official Time Table</h3>
+                <h3>⏱️ Official Event Results</h3>
                 <table id="timeTable">
-                    <thead>
-                        <tr><th>Rank</th><th>Country</th><th>Time</th><th>Award</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="4" style="text-align:center; color:#999;">Awaiting race completion...</td></tr>
-                    </tbody>
+                    <thead><tr><th>Rank</th><th>Country</th><th>Result</th><th>Award</th></tr></thead>
+                    <tbody><tr><td colspan="4" style="text-align:center; color:#999;">Awaiting event completion...</td></tr></tbody>
                 </table>
             </div>
-
             <div>
-                <h3>📊 Combined Medal Tally</h3>
+                <h3>📊 Overall Medal Tally</h3>
                 <table id="medalTable">
-                    <thead>
-                        <tr><th>Country</th><th>🥇 G</th><th>🥈 S</th><th>🥉 B</th></tr>
-                    </thead>
+                    <thead><tr><th>Country</th><th>🥇 G</th><th>🥈 S</th><th>🥉 B</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -282,63 +222,80 @@
 </div>
 
 <script>
-    // System Configurations & Competitor Meta Nodes
-    const npcPool = ["USA", "JAM", "ITA", "CAN", "GBR", "RSA", "CHN", "JPN", "GER"];
+    const npcPool = ["USA", "JAM", "KEN", "CAN", "GBR", "GER", "CHN", "ITA", "FRA"];
     let playerCountry = "AUS";
-    let currentSecond = 1;
-    let raceActive = false;
-
-    let athletes = {};
     let medalTally = {};
-    let currentTileSpeeds = [];
+    
+    // Core Game State
+    let currentEventIndex = 0;
+    let currentRound = 1;
+    let eventActive = false;
+    let currentTileValues = [];
+    let scores = {}; // Tracks raw power points (max 100 per event)
 
-    // Initialize global tallies
-    npcPool.forEach(c => medalTally[c] = { Gold: 0, Silver: 0, Bronze: 0 });
+    // The 10 Olympic Events & Realistic Calculation Formulas
+    // Score logic: 10 rounds * max 10 power = 100 max points.
+    const olympicEvents = [
+        { name: "100m Sprint", unit: "s", sortAsc: true, calc: (score) => 100 / (score / 10) }, 
+        { name: "Long Jump", unit: "m", sortAsc: false, calc: (score) => score * 0.086 }, 
+        { name: "Shot Put", unit: "m", sortAsc: false, calc: (score) => score * 0.228 }, 
+        { name: "High Jump", unit: "m", sortAsc: false, calc: (score) => score * 0.024 }, 
+        { name: "400m Sprint", unit: "s", sortAsc: true, calc: (score) => 400 / (score / 10 * 0.9) }, 
+        { name: "110m Hurdles", unit: "s", sortAsc: true, calc: (score) => 110 / (score / 10 * 0.85) }, 
+        { name: "Discus Throw", unit: "m", sortAsc: false, calc: (score) => score * 0.72 }, 
+        { name: "Pole Vault", unit: "m", sortAsc: false, calc: (score) => score * 0.061 }, 
+        { name: "Javelin Throw", unit: "m", sortAsc: false, calc: (score) => score * 0.92 }, 
+        { name: "1500m Run", unit: "s", sortAsc: true, calc: (score) => 1500 / (score / 10 * 0.7) }
+    ];
 
-    function startGame() {
+    function initializeGames() {
         const input = document.getElementById('countryInput').value.trim().toUpperCase();
         playerCountry = input ? input.substring(0, 3) : "AUS";
         
-        if (!medalTally[playerCountry]) {
-            medalTally[playerCountry] = { Gold: 0, Silver: 0, Bronze: 0 };
-        }
+        [playerCountry, ...npcPool].forEach(c => medalTally[c] = { Gold: 0, Silver: 0, Bronze: 0 });
 
         document.getElementById('setupScreen').style.display = 'none';
         document.getElementById('gameScreen').style.display = 'block';
         
         updateMedalTable();
-        resetRace();
+        startEvent();
     }
 
-    function resetRace() {
-        currentSecond = 1;
-        raceActive = true;
-        document.getElementById('nextRaceBtn').style.display = 'none';
-        document.getElementById('actionPrompt').innerText = "Choose a hidden Burst Tile to gain speed!";
+    function startEvent() {
+        if (currentEventIndex >= olympicEvents.length) {
+            document.getElementById('eventTitle').innerText = "🏆 OLYMPIC GAMES CONCLUDED 🏆";
+            document.getElementById('actionPrompt').innerText = "Check the final medal standings below!";
+            document.getElementById('tileGrid').style.display = 'none';
+            document.getElementById('nextEventBtn').style.display = 'none';
+            return;
+        }
+
+        const ev = olympicEvents[currentEventIndex];
+        document.getElementById('eventTitle').innerText = `Event ${currentEventIndex + 1}: ${ev.name}`;
+        document.getElementById('nextEventBtn').style.display = 'none';
         
-        // Build athlete parameters
-        athletes = {};
-        athletes[playerCountry] = { distance: 0, time: 0, isHuman: true };
+        currentRound = 1;
+        eventActive = true;
+        scores = {};
         
-        npcPool.forEach(npc => {
-            athletes[npc] = {
-                distance: 0,
-                time: 0,
-                isHuman: false,
-                // AI baseline tracking speed parameters matching elite pacing
-                baseSpeed: 9.6 + Math.random() * 0.8 
+        // Initialize scores and NPC hidden AI strengths (base 8.0 to 9.5 avg per round)
+        [playerCountry, ...npcPool].forEach(c => {
+            scores[c] = { 
+                total: 0, 
+                isHuman: c === playerCountry,
+                aiStrength: c === playerCountry ? 0 : 8.0 + (Math.random() * 1.5)
             };
         });
 
         generateTiles();
         updateUI();
         renderTrack();
+        clearTimeTable();
     }
 
     function generateTiles() {
-        // Core game mechanic array shuffle
-        currentTileSpeeds = [2, 5, 8, 10];
-        currentTileSpeeds.sort(() => Math.random() - 0.5);
+        currentTileValues = [7, 8, 9, 10];
+        currentTileValues.sort(() => Math.random() - 0.5); // Shuffle array
         
         const tiles = document.querySelectorAll('.tile');
         tiles.forEach(tile => {
@@ -351,183 +308,151 @@
         const track = document.getElementById('visualTrack');
         track.innerHTML = '';
         
-        Object.keys(athletes).forEach(country => {
+        Object.keys(scores).forEach(country => {
             const lane = document.createElement('div');
             lane.className = 'lane';
             
-            const label = document.createElement('div');
-            label.className = 'lane-label';
-            label.innerText = country;
-            
-            const barBg = document.createElement('div');
-            barBg.className = 'lane-bar-bg';
-            
-            const progress = document.createElement('div');
-            progress.className = 'lane-progress' + (country === playerCountry ? ' player-lane' : '');
-            progress.id = `track-${country}`;
-            
-            const marker = document.createElement('span');
-            marker.className = 'runner-marker';
-            marker.innerText = '🏃';
-            
-            progress.appendChild(marker);
-            barBg.appendChild(progress);
-            lane.appendChild(label);
-            lane.appendChild(barBg);
+            lane.innerHTML = `
+                <div class="lane-label">${country}</div>
+                <div class="lane-bar-bg">
+                    <div class="lane-progress ${country === playerCountry ? 'player-lane' : ''}" id="bar-${country}"></div>
+                </div>
+            `;
             track.appendChild(lane);
         });
     }
 
-    function selectTile(tileIndex) {
-        if (!raceActive) return;
+    function selectTile(index) {
+        if (!eventActive) return;
 
+        const chosenValue = currentTileValues[index];
+        scores[playerCountry].total += chosenValue;
+
+        // Visual Tile Update
         const tiles = document.querySelectorAll('.tile');
-        const chosenSpeed = currentTileSpeeds[tileIndex];
-        
-        // Process Human step logic
-        if (athletes[playerCountry].distance < 100) {
-            athletes[playerCountry].distance += chosenSpeed;
-            if (athletes[playerCountry].distance >= 100 && athletes[playerCountry].time === 0) {
-                let overshoot = athletes[playerCountry].distance - 100;
-                athletes[playerCountry].time = currentSecond - (overshoot / chosenSpeed);
-            }
-        }
-
-        // Show choice results
-        tiles[tileIndex].innerText = chosenSpeed + "m/s";
-        tiles[tileIndex].classList.add('revealed');
+        tiles[index].innerText = `+${chosenValue}`;
+        tiles[index].classList.add('revealed');
         tiles.forEach(t => { if(!t.classList.contains('revealed')) t.classList.add('disabled'); });
 
-        // Simulate environmental/NPC timeline ticks
-        simulateNPCs();
-        updateTrackPositions();
+        // Simulate NPCs
+        Object.keys(scores).forEach(c => {
+            if (!scores[c].isHuman) {
+                // NPCs generate a realistic score based on their hidden strength + slight randomness
+                let npcTurnScore = scores[c].aiStrength + (Math.random() * 2 - 1); 
+                scores[c].total += Math.min(Math.max(npcTurnScore, 7), 10); // Keep bound between 7 and 10
+            }
+        });
 
-        // Check turn engine status or iterate loop parameters
+        updateTrackBars();
+
         setTimeout(() => {
-            if (currentSecond >= 10 || checkAllFinished()) {
-                endRace();
+            if (currentRound >= 10) {
+                finishEvent();
             } else {
-                currentSecond++;
+                currentRound++;
                 generateTiles();
                 updateUI();
             }
-        }, 1000);
+        }, 800);
     }
 
-    function simulateNPCs() {
-        Object.keys(athletes).forEach(name => {
-            let runner = athletes[name];
-            if (!runner.isHuman && runner.distance < 100) {
-                // Introduce slight variance into real-time AI splits
-                let stepSpeed = runner.baseSpeed + (Math.random() * 0.8 - 0.4);
-                runner.distance += stepSpeed;
-                
-                if (runner.distance >= 100 && runner.time === 0) {
-                    let overshoot = runner.distance - 100;
-                    runner.time = currentSecond - (overshoot / stepSpeed);
-                }
-            }
+    function updateTrackBars() {
+        Object.keys(scores).forEach(c => {
+            const bar = document.getElementById(`bar-${c}`);
+            if (bar) bar.style.width = `${Math.min(scores[c].total, 100)}%`;
         });
-    }
-
-    function updateTrackPositions() {
-        Object.keys(athletes).forEach(name => {
-            const progBar = document.getElementById(`track-${name}`);
-            if (progBar) {
-                let displayPercent = Math.min((athletes[name].distance / 100) * 100, 100);
-                progBar.style.width = displayPercent + '%';
-            }
-        });
-    }
-
-    function checkAllFinished() {
-        return Object.values(athletes).every(a => a.distance >= 100);
     }
 
     function updateUI() {
-        document.getElementById('roundDisplay').innerText = `Second: ${currentSecond} / 10`;
-        let pDist = athletes[playerCountry] ? athletes[playerCountry].distance : 0;
-        document.getElementById('playerDistanceDisplay').innerText = `Distance: ${Math.min(pDist, 100).toFixed(2)}m / 100m`;
+        document.getElementById('roundDisplay').innerText = `Phase: ${currentRound} / 10`;
+        document.getElementById('playerScoreDisplay').innerText = `Accumulated Power: ${Math.floor(scores[playerCountry].total)}`;
+        document.getElementById('actionPrompt').innerText = "Select a hidden tile (7, 8, 9, or 10) to build momentum!";
     }
 
-    function endRace() {
-        raceActive = false;
-        document.getElementById('actionPrompt').innerText = "Race Finished!";
+    function formatTime(seconds) {
+        if (seconds >= 60) {
+            let m = Math.floor(seconds / 60);
+            let s = (seconds % 60).toFixed(2);
+            return `${m}:${s.padStart(5, '0')}`;
+        }
+        return seconds.toFixed(2) + "s";
+    }
+
+    function finishEvent() {
+        eventActive = false;
+        document.getElementById('actionPrompt').innerText = "Event Complete! Calculating official results...";
         
-        // Extrapolate times for runners that didn't finish within the 10s timeframe
-        Object.keys(athletes).forEach(name => {
-            let runner = athletes[name];
-            if (runner.time === 0) {
-                let remaining = 100 - runner.distance;
-                let pace = runner.isHuman ? 5 : runner.baseSpeed;
-                runner.time = 10.0 + (remaining / Math.max(pace, 1));
-            }
+        const ev = olympicEvents[currentEventIndex];
+        let leaderboard = [];
+
+        // Apply realistic calculation formulas to raw 1-100 scores
+        Object.keys(scores).forEach(c => {
+            let rawResult = ev.calc(scores[c].total);
+            leaderboard.push({ name: c, result: rawResult });
         });
 
-        // Compute scoreboard order
-        let leaderboard = Object.keys(athletes).map(name => ({ name, ...athletes[name] }));
-        leaderboard.sort((a, b) => a.time - b.time);
+        // Sort based on whether Time (lower is better) or Distance (higher is better)
+        if (ev.sortAsc) {
+            leaderboard.sort((a, b) => a.result - b.result);
+        } else {
+            leaderboard.sort((a, b) => b.result - a.result);
+        }
 
-        // Map Medal Updates
+        // Award Medals
         medalTally[leaderboard[0].name].Gold++;
         medalTally[leaderboard[1].name].Silver++;
         medalTally[leaderboard[2].name].Bronze++;
 
-        // Render data changes out to visual templates
-        renderTimeTable(leaderboard);
-        updateMedalTable();
-
-        document.getElementById('nextRaceBtn').style.display = 'inline-block';
-    }
-
-    function renderTimeTable(leaderboard) {
+        // Render Results
         const tbody = document.querySelector('#timeTable tbody');
         tbody.innerHTML = '';
-
-        leaderboard.forEach((runner, index) => {
+        
+        leaderboard.forEach((athlete, index) => {
             const tr = document.createElement('tr');
-            if (runner.name === playerCountry) tr.className = 'highlight';
+            if (athlete.name === playerCountry) tr.className = 'highlight';
 
             let rank = index + 1;
-            let medalBadge = '';
-            if (rank === 1) medalBadge = '<span class="badge gold">🥇 GOLD</span>';
-            if (rank === 2) medalBadge = '<span class="badge silver">🥈 SILVER</span>';
-            if (rank === 3) medalBadge = '<span class="badge bronze">🥉 BRONZE</span>';
+            let badge = rank === 1 ? '<span class="badge gold">🥇 GOLD</span>' :
+                        rank === 2 ? '<span class="badge silver">🥈 SILVER</span>' :
+                        rank === 3 ? '<span class="badge bronze">🥉 BRONZE</span>' : '';
 
-            tr.innerHTML = `
-                <td>${rank}</td>
-                <td>${runner.name}</td>
-                <td>${runner.time.toFixed(2)}s</td>
-                <td>${medalBadge}</td>
-            `;
+            let displayResult = ev.unit === "s" ? formatTime(athlete.result) : athlete.result.toFixed(2) + ev.unit;
+
+            tr.innerHTML = `<td>${rank}</td><td>${athlete.name}</td><td>${displayResult}</td><td>${badge}</td>`;
             tbody.appendChild(tr);
         });
+
+        updateMedalTable();
+        document.getElementById('nextEventBtn').style.display = 'inline-block';
+    }
+
+    function clearTimeTable() {
+        document.querySelector('#timeTable tbody').innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">Race in progress...</td></tr>';
     }
 
     function updateMedalTable() {
         const tbody = document.querySelector('#medalTable tbody');
         tbody.innerHTML = '';
 
-        // Sort dynamic tallies
         let sortedTally = Object.keys(medalTally).map(name => ({ name, ...medalTally[name] }));
         sortedTally.sort((a, b) => b.Gold - a.Gold || b.Silver - a.Silver || b.Bronze - a.Bronze);
 
         sortedTally.forEach(item => {
-            // Render user country or countries with existing medals
             if (item.Gold > 0 || item.Silver > 0 || item.Bronze > 0 || item.name === playerCountry) {
                 const tr = document.createElement('tr');
                 if (item.name === playerCountry) tr.className = 'highlight';
-                
-                tr.innerHTML = `
-                    <td>${item.name}</td>
-                    <td>${item.Gold}</td>
-                    <td>${item.Silver}</td>
-                    <td>${item.Bronze}</td>
-                `;
+                tr.innerHTML = `<td>${item.name}</td><td>${item.Gold}</td><td>${item.Silver}</td><td>${item.Bronze}</td>`;
                 tbody.appendChild(tr);
             }
         });
     }
+
+    function startNextEvent() {
+        currentEventIndex++;
+        startEvent();
+    }
 </script>
 </body>
 </html>
+
+                                                
