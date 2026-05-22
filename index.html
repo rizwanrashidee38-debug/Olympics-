@@ -1,1 +1,533 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olympic 100m Sprint Simulator</title>
+    <style>
+        :root {
+            --primary: #0085C7;
+            --gold: #D4AF37;
+            --silver: #C0C0C0;
+            --bronze: #CD7F32;
+            --dark: #1a1a1a;
+            --light: #f4f4f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--dark);
+        }
+
+        .setup-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        input, button {
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #006699;
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            background: #eee;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        /* Tile Grid Mechanics */
+        .tile-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .tile {
+            background: var(--primary);
+            color: white;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .tile:hover {
+            transform: translateY(-3px);
+            background-color: #006699;
+        }
+
+        .tile.revealed {
+            background-color: #28a745;
+            pointer-events: none;
+        }
+
+        .tile.disabled {
+            background-color: #ccc;
+            pointer-events: none;
+            transform: none;
+        }
+
+        /* Visual Track Feed */
+        .track-container {
+            background: #d63031;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .lane {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px dashed rgba(255,255,255,0.4);
+            padding: 6px 0;
+            position: relative;
+        }
+
+        .lane:last-child { border-bottom: none; }
+
+        .lane-label {
+            width: 50px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .lane-bar-bg {
+            flex-grow: 1;
+            background: rgba(0,0,0,0.2);
+            height: 14px;
+            border-radius: 7px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lane-progress {
+            height: 100%;
+            background: #ffeaa7;
+            width: 0%;
+            transition: width 0.4s ease-out;
+            position: relative;
+        }
+
+        .lane-progress.player-lane {
+            background: #55efc4;
+        }
+
+        .runner-marker {
+            position: absolute;
+            right: 0;
+            top: -2px;
+            font-size: 14px;
+        }
+
+        /* Tables Data Grid */
+        .tables-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: #2d3436;
+            color: white;
+        }
+
+        tr.highlight {
+            background-color: #e8f4fd;
+            font-weight: bold;
+        }
+
+        .badge {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .gold { background: var(--gold); color: black; }
+        .silver { background: var(--silver); color: black; }
+        .bronze { background: var(--bronze); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏆 Global Olympic Simulator</h1>
+    
+    <!-- Setup Dashboard Space -->
+    <div id="setupScreen" class="setup-screen">
+        <h2>Select Your Nation</h2>
+        <p>Pick a country abbreviation to step onto the blocks (e.g., AUS, FRA, BRA, IND).</p>
+        <input type="text" id="countryInput" placeholder="NATION CODE (e.g., AUS)" maxlength="3" style="text-transform: uppercase;">
+        <button onclick="startGame()">Initialize Olympic Cycle</button>
+    </div>
+
+    <!-- Active Match Field Canvas -->
+    <div id="gameScreen" class="game-screen">
+        <div class="status-bar">
+            <span id="roundDisplay">Second: 1 / 10</span>
+            <span id="playerDistanceDisplay">Distance: 0.00m / 100m</span>
+        </div>
+
+        <h3 id="actionPrompt" style="text-align: center;">Choose a hidden Burst Tile to gain speed!</h3>
+        
+        <div class="tile-container" id="tileGrid">
+            <div class="tile" onclick="selectTile(0)">?</div>
+            <div class="tile" onclick="selectTile(1)">?</div>
+            <div class="tile" onclick="selectTile(2)">?</div>
+            <div class="tile" onclick="selectTile(3)">?</div>
+        </div>
+
+        <!-- Simulated Visual Track Grid Matrix -->
+        <div class="track-container" id="visualTrack"></div>
+
+        <div style="text-align: center; margin-top: 15px;">
+            <button id="nextRaceBtn" style="display:none;" onclick="resetRace()">Run Next 100m Event</button>
+        </div>
+
+        <!-- Time Tables and Standings Area Layout Grid -->
+        <div class="tables-section">
+            <div>
+                <h3>⏱️ 100m Official Time Table</h3>
+                <table id="timeTable">
+                    <thead>
+                        <tr><th>Rank</th><th>Country</th><th>Time</th><th>Award</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="4" style="text-align:center; color:#999;">Awaiting race completion...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div>
+                <h3>📊 Combined Medal Tally</h3>
+                <table id="medalTable">
+                    <thead>
+                        <tr><th>Country</th><th>🥇 G</th><th>🥈 S</th><th>🥉 B</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // System Configurations & Competitor Meta Nodes
+    const npcPool = ["USA", "JAM", "ITA", "CAN", "GBR", "RSA", "CHN", "JPN", "GER"];
+    let playerCountry = "AUS";
+    let currentSecond = 1;
+    let raceActive = false;
+
+    let athletes = {};
+    let medalTally = {};
+    let currentTileSpeeds = [];
+
+    // Initialize global tallies
+    npcPool.forEach(c => medalTally[c] = { Gold: 0, Silver: 0, Bronze: 0 });
+
+    function startGame() {
+        const input = document.getElementById('countryInput').value.trim().toUpperCase();
+        playerCountry = input ? input.substring(0, 3) : "AUS";
+        
+        if (!medalTally[playerCountry]) {
+            medalTally[playerCountry] = { Gold: 0, Silver: 0, Bronze: 0 };
+        }
+
+        document.getElementById('setupScreen').style.display = 'none';
+        document.getElementById('gameScreen').style.display = 'block';
+        
+        updateMedalTable();
+        resetRace();
+    }
+
+    function resetRace() {
+        currentSecond = 1;
+        raceActive = true;
+        document.getElementById('nextRaceBtn').style.display = 'none';
+        document.getElementById('actionPrompt').innerText = "Choose a hidden Burst Tile to gain speed!";
+        
+        // Build athlete parameters
+        athletes = {};
+        athletes[playerCountry] = { distance: 0, time: 0, isHuman: true };
+        
+        npcPool.forEach(npc => {
+            athletes[npc] = {
+                distance: 0,
+                time: 0,
+                isHuman: false,
+                // AI baseline tracking speed parameters matching elite pacing
+                baseSpeed: 9.6 + Math.random() * 0.8 
+            };
+        });
+
+        generateTiles();
+        updateUI();
+        renderTrack();
+    }
+
+    function generateTiles() {
+        // Core game mechanic array shuffle
+        currentTileSpeeds = [2, 5, 8, 10];
+        currentTileSpeeds.sort(() => Math.random() - 0.5);
+        
+        const tiles = document.querySelectorAll('.tile');
+        tiles.forEach(tile => {
+            tile.className = "tile";
+            tile.innerText = "?";
+        });
+    }
+
+    function renderTrack() {
+        const track = document.getElementById('visualTrack');
+        track.innerHTML = '';
+        
+        Object.keys(athletes).forEach(country => {
+            const lane = document.createElement('div');
+            lane.className = 'lane';
+            
+            const label = document.createElement('div');
+            label.className = 'lane-label';
+            label.innerText = country;
+            
+            const barBg = document.createElement('div');
+            barBg.className = 'lane-bar-bg';
+            
+            const progress = document.createElement('div');
+            progress.className = 'lane-progress' + (country === playerCountry ? ' player-lane' : '');
+            progress.id = `track-${country}`;
+            
+            const marker = document.createElement('span');
+            marker.className = 'runner-marker';
+            marker.innerText = '🏃';
+            
+            progress.appendChild(marker);
+            barBg.appendChild(progress);
+            lane.appendChild(label);
+            lane.appendChild(barBg);
+            track.appendChild(lane);
+        });
+    }
+
+    function selectTile(tileIndex) {
+        if (!raceActive) return;
+
+        const tiles = document.querySelectorAll('.tile');
+        const chosenSpeed = currentTileSpeeds[tileIndex];
+        
+        // Process Human step logic
+        if (athletes[playerCountry].distance < 100) {
+            athletes[playerCountry].distance += chosenSpeed;
+            if (athletes[playerCountry].distance >= 100 && athletes[playerCountry].time === 0) {
+                let overshoot = athletes[playerCountry].distance - 100;
+                athletes[playerCountry].time = currentSecond - (overshoot / chosenSpeed);
+            }
+        }
+
+        // Show choice results
+        tiles[tileIndex].innerText = chosenSpeed + "m/s";
+        tiles[tileIndex].classList.add('revealed');
+        tiles.forEach(t => { if(!t.classList.contains('revealed')) t.classList.add('disabled'); });
+
+        // Simulate environmental/NPC timeline ticks
+        simulateNPCs();
+        updateTrackPositions();
+
+        // Check turn engine status or iterate loop parameters
+        setTimeout(() => {
+            if (currentSecond >= 10 || checkAllFinished()) {
+                endRace();
+            } else {
+                currentSecond++;
+                generateTiles();
+                updateUI();
+            }
+        }, 1000);
+    }
+
+    function simulateNPCs() {
+        Object.keys(athletes).forEach(name => {
+            let runner = athletes[name];
+            if (!runner.isHuman && runner.distance < 100) {
+                // Introduce slight variance into real-time AI splits
+                let stepSpeed = runner.baseSpeed + (Math.random() * 0.8 - 0.4);
+                runner.distance += stepSpeed;
+                
+                if (runner.distance >= 100 && runner.time === 0) {
+                    let overshoot = runner.distance - 100;
+                    runner.time = currentSecond - (overshoot / stepSpeed);
+                }
+            }
+        });
+    }
+
+    function updateTrackPositions() {
+        Object.keys(athletes).forEach(name => {
+            const progBar = document.getElementById(`track-${name}`);
+            if (progBar) {
+                let displayPercent = Math.min((athletes[name].distance / 100) * 100, 100);
+                progBar.style.width = displayPercent + '%';
+            }
+        });
+    }
+
+    function checkAllFinished() {
+        return Object.values(athletes).every(a => a.distance >= 100);
+    }
+
+    function updateUI() {
+        document.getElementById('roundDisplay').innerText = `Second: ${currentSecond} / 10`;
+        let pDist = athletes[playerCountry] ? athletes[playerCountry].distance : 0;
+        document.getElementById('playerDistanceDisplay').innerText = `Distance: ${Math.min(pDist, 100).toFixed(2)}m / 100m`;
+    }
+
+    function endRace() {
+        raceActive = false;
+        document.getElementById('actionPrompt').innerText = "Race Finished!";
+        
+        // Extrapolate times for runners that didn't finish within the 10s timeframe
+        Object.keys(athletes).forEach(name => {
+            let runner = athletes[name];
+            if (runner.time === 0) {
+                let remaining = 100 - runner.distance;
+                let pace = runner.isHuman ? 5 : runner.baseSpeed;
+                runner.time = 10.0 + (remaining / Math.max(pace, 1));
+            }
+        });
+
+        // Compute scoreboard order
+        let leaderboard = Object.keys(athletes).map(name => ({ name, ...athletes[name] }));
+        leaderboard.sort((a, b) => a.time - b.time);
+
+        // Map Medal Updates
+        medalTally[leaderboard[0].name].Gold++;
+        medalTally[leaderboard[1].name].Silver++;
+        medalTally[leaderboard[2].name].Bronze++;
+
+        // Render data changes out to visual templates
+        renderTimeTable(leaderboard);
+        updateMedalTable();
+
+        document.getElementById('nextRaceBtn').style.display = 'inline-block';
+    }
+
+    function renderTimeTable(leaderboard) {
+        const tbody = document.querySelector('#timeTable tbody');
+        tbody.innerHTML = '';
+
+        leaderboard.forEach((runner, index) => {
+            const tr = document.createElement('tr');
+            if (runner.name === playerCountry) tr.className = 'highlight';
+
+            let rank = index + 1;
+            let medalBadge = '';
+            if (rank === 1) medalBadge = '<span class="badge gold">🥇 GOLD</span>';
+            if (rank === 2) medalBadge = '<span class="badge silver">🥈 SILVER</span>';
+            if (rank === 3) medalBadge = '<span class="badge bronze">🥉 BRONZE</span>';
+
+            tr.innerHTML = `
+                <td>${rank}</td>
+                <td>${runner.name}</td>
+                <td>${runner.time.toFixed(2)}s</td>
+                <td>${medalBadge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateMedalTable() {
+        const tbody = document.querySelector('#medalTable tbody');
+        tbody.innerHTML = '';
+
+        // Sort dynamic tallies
+        let sortedTally = Object.keys(medalTally).map(name => ({ name, ...medalTally[name] }));
+        sortedTally.sort((a, b) => b.Gold - a.Gold || b.Silver - a.Silver || b.Bronze - a.Bronze);
+
+        sortedTally.forEach(item => {
+            // Render user country or countries with existing medals
+            if (item.Gold > 0 || item.Silver > 0 || item.Bronze > 0 || item.name === playerCountry) {
+                const tr = document.createElement('tr');
+                if (item.name === playerCountry) tr.className = 'highlight';
+                
+                tr.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.Gold}</td>
+                    <td>${item.Silver}</td>
+                    <td>${item.Bronze}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+    }
+</script>
+</body>
+</html>
